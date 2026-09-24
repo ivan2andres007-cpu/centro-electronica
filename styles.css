@@ -1,0 +1,360 @@
+/* ========================================================
+   PUNTO PRISMA - APPLE PRO / MODERN DARK DESIGN SYSTEM
+   Inspirado en Apple Human Interface Guidelines y DiBold UI
+   ======================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+:root {
+    --bg-main: #090e1a;
+    --bg-card: rgba(18, 26, 47, 0.72);
+    --bg-card-hover: rgba(26, 38, 68, 0.85);
+    --bg-card-solid: #111a30;
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --border-accent: rgba(6, 182, 212, 0.3);
+    
+    --accent-teal: #06b6d4;
+    --accent-teal-glow: rgba(6, 182, 212, 0.25);
+    --accent-cyan: #38bdf8;
+    --accent-emerald: #10b981;
+    --accent-emerald-glow: rgba(16, 185, 129, 0.2);
+    --accent-indigo: #6366f1;
+    --accent-indigo-glow: rgba(99, 102, 241, 0.25);
+    --accent-rose: #f43f5e;
+    --accent-amber: #f59e0b;
+    
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+}
+
+* {
+    box-sizing: border-box;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    overflow: hidden;
+}
+
+/* Números tabulares para alineación perfecta de importes y cantidades */
+.tabular-nums, .num-gs, td[data-num="true"], .font-mono-num {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+}
+
+/* Card Apple Glassmorphism */
+.card-apple {
+    background: var(--bg-card);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--border-subtle);
+    border-radius: 1.25rem;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-apple:hover {
+    border-color: rgba(255, 255, 255, 0.14);
+}
+
+.card-apple-interactive {
+    cursor: pointer;
+}
+
+.card-apple-interactive:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 30px -8px rgba(0, 0, 0, 0.5);
+    border-color: rgba(6, 182, 212, 0.35);
+}
+
+/* Transición fluida de secciones */
+.seccion {
+    display: none;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.seccion.activa {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Botones Apple Pro */
+.btn-apple {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    border-radius: 0.85rem;
+    padding: 0.65rem 1.25rem;
+    font-size: 0.875rem;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+
+.btn-apple:active:not(:disabled) {
+    transform: scale(0.97);
+}
+
+.btn-apple:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none !important;
+    filter: grayscale(40%);
+}
+
+.btn-apple-primary {
+    background: linear-gradient(135deg, #06b6d4 0%, #0284c7 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 14px 0 var(--accent-teal-glow);
+}
+.btn-apple-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #22d3ee 0%, #0369a1 100%);
+    box-shadow: 0 6px 20px 0 rgba(6, 182, 212, 0.4);
+    transform: translateY(-1px);
+}
+
+.btn-apple-emerald {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 14px 0 var(--accent-emerald-glow);
+}
+.btn-apple-emerald:hover:not(:disabled) {
+    background: linear-gradient(135deg, #34d399 0%, #047857 100%);
+    box-shadow: 0 6px 20px 0 rgba(16, 185, 129, 0.4);
+    transform: translateY(-1px);
+}
+
+.btn-apple-indigo {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 14px 0 var(--accent-indigo-glow);
+}
+.btn-apple-indigo:hover:not(:disabled) {
+    background: linear-gradient(135deg, #818cf8 0%, #4338ca 100%);
+    box-shadow: 0 6px 20px 0 rgba(99, 102, 241, 0.4);
+    transform: translateY(-1px);
+}
+
+.btn-apple-danger {
+    background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+    color: #ffffff;
+}
+.btn-apple-danger:hover:not(:disabled) {
+    background: linear-gradient(135deg, #fb7185 0%, #be123c 100%);
+    box-shadow: 0 6px 20px 0 rgba(244, 63, 94, 0.4);
+    transform: translateY(-1px);
+}
+
+.btn-apple-secondary {
+    background: rgba(255, 255, 255, 0.07);
+    color: #e2e8f0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.btn-apple-secondary:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+}
+
+/* Inputs Apple Pro */
+.input-apple {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 0.85rem;
+    padding: 0.7rem 1rem;
+    color: #f8fafc;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+    outline: none;
+    width: 100%;
+}
+.input-apple:focus {
+    border-color: #06b6d4;
+    box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.22);
+    background: rgba(15, 23, 42, 0.9);
+}
+.input-apple::placeholder {
+    color: #64748b;
+}
+select.input-apple {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.75rem center;
+    background-repeat: no-repeat;
+    background-size: 1.25rem 1.25rem;
+    padding-right: 2.5rem;
+}
+select.input-apple option {
+    background-color: #0f172a;
+    color: #f8fafc;
+}
+
+/* Tablas Apple Pro */
+.table-apple {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.875rem;
+}
+
+.table-apple thead th {
+    background: rgba(15, 23, 42, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: #94a3b8;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.table-apple tbody td {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    color: #cbd5e1;
+}
+
+.table-apple tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.table-apple tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.035);
+}
+
+/* Badges estilo Píldora Apple */
+.badge-apple {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 9999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+.badge-emerald { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+.badge-teal { background: rgba(6, 182, 212, 0.15); color: #22d3ee; border: 1px solid rgba(6, 182, 212, 0.3); }
+.badge-indigo { background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); }
+.badge-amber { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+.badge-rose { background: rgba(244, 63, 94, 0.15); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.3); }
+
+/* Modales Flotantes Apple */
+.modal-apple-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(3, 7, 18, 0.78);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.modal-apple-card {
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 1.5rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+    animation: modalIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes modalIn {
+    from {
+        opacity: 0;
+        transform: scale(0.96) translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Barra de desplazamiento elegante */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.14);
+    border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+/* Toast Notification */
+@keyframes toastSlide {
+    from { transform: translateY(-100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+.toast-apple {
+    animation: toastSlide 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.6);
+}
+
+/* Modos de Impresión Blindados */
+@media screen {
+    #areaFactura { display: none !important; }
+}
+@media print {
+    body, html {
+        background: #ffffff !important;
+        color: #000000 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    #indicadorRedGlobal, #modalLogin, #modalFactura, #modalDetalle, #modalElegirSucursal,
+    #modalEditorUniversal, #modalBloqueo, #modalCambiarPin, #modalClienteRapido, #modalEscanerQR,
+    #sidebar, .md\:hidden, #contenedorAlertas, main > *:not(#areaFactura) {
+        display: none !important;
+    }
+    #areaFactura {
+        display: block !important;
+        position: static !important;
+        width: 100% !important;
+        color: #000000 !important;
+        background: #ffffff !important;
+        margin: 0 !important;
+    }
+    .modo-factura #areaFactura {
+        max-width: 210mm;
+        padding: 10mm;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    .modo-ticket #areaFactura {
+        max-width: 80mm;
+        padding: 2mm;
+        font-family: monospace;
+    }
+    table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+    th, td {
+        border: 1px solid #000;
+        padding: 4px 6px;
+        font-size: 11px;
+        color: #000 !important;
+    }
+}

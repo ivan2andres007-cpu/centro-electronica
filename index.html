@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Punto Prisma - V28 (Apple Pro Dark & Stock Blindado)</title>
+    
+    <!-- Librerías de soporte -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Sistema de diseño visual estilo Apple Pro -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <style>
+        .hidden { display: none !important; }
+        #modalLogin:not(.hidden), #modalFactura:not(.hidden), #modalEscanerQR:not(.hidden), #modalClienteRapido:not(.hidden),
+        #modalCambiarPin:not(.hidden), #modalEditorUniversal:not(.hidden), #modalDetalle:not(.hidden),
+        #modalElegirSucursal:not(.hidden), #modalBloqueo:not(.hidden) { display: flex !important; }
+    </style>
+</head>
+<body class="h-screen flex flex-col md:flex-row overflow-hidden relative select-none">
+
+    <!-- Indicador de Red Global Estilo Apple Pill -->
+    <div id="indicadorRedGlobal" class="fixed top-3 md:top-5 left-1/2 transform -translate-x-1/2 z-[130] flex items-center gap-2 bg-slate-900/80 backdrop-blur-xl px-4 py-1.5 rounded-full shadow-2xl border border-white/10 transition-all duration-300">
+        <span id="dotRed" class="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span>
+        <span id="textRed" class="text-slate-300 tracking-wider text-[11px] font-semibold">Sincronizado</span>
+    </div>
+
+    <!-- MODAL LOGIN APPLE GLASS -->
+    <div id="modalLogin" class="modal-apple-backdrop">
+        <div class="modal-apple-card p-8 w-full max-w-sm text-center relative">
+            <div class="w-16 h-16 bg-gradient-to-tr from-cyan-500/20 to-teal-500/10 border border-cyan-500/30 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-[0_0_20px_rgba(6,182,212,0.15)]">
+                <span class="text-3xl">💎</span>
+            </div>
+            <h1 class="text-2xl font-black text-white tracking-tight mb-1">PUNTO PRISMA</h1>
+            <p class="text-xs text-slate-400 mb-6 font-medium">Acceso Seguro por PIN</p>
+            <form onsubmit="intentarLogin(event)" class="space-y-5">
+                <input type="password" id="loginPin" required pattern="[0-9]{4}" maxlength="4" placeholder="••••" class="input-apple text-center text-3xl font-mono tracking-[0.5em] py-3.5 bg-slate-950/70">
+                <button type="submit" class="btn-apple btn-apple-primary w-full py-3.5 text-base font-bold shadow-lg shadow-cyan-500/20">Desbloquear</button>
+            </form>
+            <p id="lblIntentos" class="text-[11px] text-rose-400 mt-4 font-semibold"></p>
+        </div>
+    </div>
+
+    <!-- MODAL BLOQUEO MANTENIMIENTO -->
+    <div id="modalBloqueo" class="hidden modal-apple-backdrop">
+        <div class="modal-apple-card p-8 w-full max-w-md text-center border-rose-500/30">
+            <div class="text-5xl mb-3">🛠️</div>
+            <h2 class="text-xl font-black text-white mb-2">SERVICIO SUSPENDIDO</h2>
+            <p id="lblBloqueoDetalle" class="text-xs text-slate-300 mb-5"></p>
+            <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-4 text-left text-xs space-y-1.5 mb-5 text-slate-300">
+                <p><b>Responsable técnico:</b> <span id="lblBloqueoTecnico" class="text-white"></span></p>
+                <p><b>Contacto:</b> <span id="lblBloqueoContacto" class="text-white"></span></p>
+                <p><b>Monto pendiente:</b> <span id="lblBloqueoMonto" class="text-emerald-400 font-bold tabular-nums"></span></p>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4">Sólo el rol INFORMÁTICO puede liberar el sistema registrando el pago.</p>
+            <button onclick="cerrarSesion()" class="btn-apple btn-apple-danger w-full py-3 text-xs font-bold">🔒 Salir e ingresar como Informático</button>
+        </div>
+    </div>
+
+    <!-- MODAL CAMBIAR PIN -->
+    <div id="modalCambiarPin" class="hidden modal-apple-backdrop">
+        <div class="modal-apple-card p-6 w-full max-w-xs text-center">
+            <h3 class="font-bold text-base text-white mb-4">🔐 Cambiar mi PIN</h3>
+            <form onsubmit="guardarNuevoPin(event)" class="space-y-4">
+                <input type="password" id="nuevoPinInput" required pattern="[0-9]{4}" maxlength="4" placeholder="••••" class="input-apple text-center text-2xl font-mono tracking-widest bg-slate-950/70">
+                <div class="flex gap-2">
+                    <button type="button" onclick="document.getElementById('modalCambiarPin').classList.add('hidden')" class="btn-apple btn-apple-secondary flex-1 py-2 text-xs">Cancelar</button>
+                    <button type="submit" class="btn-apple btn-apple-primary flex-1 py-2 text-xs">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL DETALLE UNIVERSAL -->
+    <div id="modalDetalle" class="hidden modal-apple-backdrop">
+        <div class="modal-apple-card w-full max-w-4xl flex flex-col max-h-[92vh]">
+            <div class="p-4 border-b border-slate-800 bg-slate-900/70 flex justify-between items-center">
+                <h3 id="tituloDetalle" class="font-bold text-base text-white">Detalle</h3>
+                <div class="flex items-center gap-2">
+                    <button onclick="imprimirDetalleActual()" class="btn-apple btn-apple-secondary text-xs py-1.5 px-3">🖨️ Imprimir A4</button>
+                    <button onclick="cerrarDetalle()" class="text-slate-400 hover:text-white font-bold text-xl px-2">✕</button>
+                </div>
+            </div>
+            <div id="cuerpoDetalle" class="p-6 overflow-y-auto custom-scrollbar flex-1 bg-white text-slate-900"></div>
+        </div>
+    </div>
+
+    <!-- MODAL ELEGIR SUCURSAL PARA IMPRIMIR -->
+    <div id="modalElegirSucursal" class="hidden modal-apple-backdrop">
+        <div class="modal-apple-card p-6 w-full max-w-sm">
+            <h3 class="font-bold text-base text-white mb-1">🖨️ Imprimir Inventario</h3>
+            <p class="text-xs text-slate-400 mb-4">Seleccione la sucursal a listar en orden alfabético:</p>
+            <select id="selectSucursalImpresion" class="input-apple mb-4 font-semibold text-xs"></select>
+            <div class="flex gap-2">
+                <button onclick="document.getElementById('modalElegirSucursal').classList.add('hidden')" class="btn-apple btn-apple-secondary flex-1 py-2 text-xs">Cancelar</button>
+                <button onclick="confirmarImpresionInventario()" class="btn-apple btn-apple-primary flex-1 py-2 text-xs">Imprimir</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL FACTURA PREVIA -->
+    <div id="modalFactura" class="hidden modal-apple-backdrop">
+        <div class="modal-apple-card w-full max-w-3xl flex flex-col max-h-[92vh]">
+            <div class="p-4 border-b border-slate-800 bg-slate-900/70 flex justify-between items-center">
+                <h3 class="font-bold text-base text-white">🧾 Previsualización de Factura</h3>
+                <button onclick="cerrarModalFactura()" class="text-slate-400 hover:text-white font-bold text-xl px-2">✕</button>
+            </div>
+            <div class="p-6 overflow-y-auto custom-scrollbar flex-1 bg-white text-slate-900" id="contenedorVistaFactura">
+                <div class="border-2 border-slate-900 p-6 rounded-xl" id="moldeFacturaA4">
+                    <div class="flex justify-between items-start border-b-2 border-slate-900 pb-3 mb-4">
+                        <div>
+                            <h2 class="text-2xl font-black tracking-tight">PUNTO PRISMA</h2>
+                            <p class="text-xs font-bold mt-1">SUCURSAL: <span id="facVistaSucursal" class="font-normal"></span></p>
+                            <p class="text-xs font-bold">VENDEDOR: <span id="facVistaVendedor" class="font-normal"></span></p>
+                        </div>
+                        <div class="text-right border-l-2 border-slate-900 pl-4">
+                            <h3 class="text-lg font-bold">FACTURA</h3>
+                            <p class="text-xs font-bold mt-1">FECHA: <span id="facVistaFecha" class="font-normal"></span></p>
+                            <p class="text-xs font-bold">CONDICIÓN: <span id="facVistaCondicion" class="font-normal"></span></p>
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 mb-4 text-xs grid grid-cols-2 gap-2">
+                        <p><b>CLIENTE:</b> <span id="facVistaCliente"></span></p>
+                        <p><b>RUC/C.I.:</b> <span id="facVistaRuc"></span></p>
+                        <p><b>DIRECCIÓN:</b> <span id="facVistaDir"></span></p>
+                    </div>
+                    <table class="w-full text-xs mb-4">
+                        <thead class="border-b border-t border-slate-900 bg-slate-100">
+                            <tr><th class="py-1.5 text-left">CANT.</th><th class="py-1.5 text-left">DESCRIPCIÓN</th><th class="py-1.5 text-right">PRECIO UNIT.</th><th class="py-1.5 text-right">SUBTOTAL</th></tr>
+                        </thead>
+                        <tbody id="facVistaGrilla"></tbody>
+                    </table>
+                    <div class="border-t-2 border-slate-900 pt-3 flex justify-between items-end gap-4">
+                        <div class="flex-1 bg-slate-100 p-2 rounded text-[11px]">
+                            <p class="font-bold mb-0.5">TOTAL EN LETRAS:</p>
+                            <p id="facVistaLetras" class="uppercase font-mono text-slate-700"></p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[10px] font-bold text-slate-500 uppercase">Total General</p>
+                            <p id="facVistaTotalNum" class="text-2xl font-black text-slate-900 tabular-nums"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 border-t border-slate-800 bg-slate-900/90 flex gap-3">
+                <button onclick="cerrarModalFactura()" class="btn-apple btn-apple-secondary flex-1 py-2.5 text-xs font-bold">Cancelar</button>
+                <button id="btnImprimirTicket" onclick="procesarVentaReal('ticket')" class="btn-apple btn-apple-secondary flex-1 py-2.5 text-xs font-bold">🧾 Ticket 80mm</button>
+                <button id="btnImprimirA4" onclick="procesarVentaReal('factura')" class="btn-apple btn-apple-primary flex-1 py-2.5 text-xs font-bold">📄 Factura A4</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CLIENTE RAPIDO -->
+    <div id="modalClienteRapido" class="hidden modal-apple-backdrop">
+        <div class="modal-apple-card p-6 w-full max-w-sm">
+            <h3 class="font-bold text-base text-white mb-4">⚡ Alta de Cliente Express</h3>
+            <form onsubmit="guardarClienteRapido(event)" class="space-y-3">
+                <input id="cliRapidoNombre" required placeholder="Nombre" class="input-apple text-xs">
+                <input id="cliRapidoApellido" required placeholder="Apellido" class="input-apple text-xs">
+                <input id="cliRapidoDoc" required placeholder="C.I. / RUC" class="input-apple text-xs">
+                <input id="cliRapidoTel" placeholder="Teléfono (opcional)" class="input-apple text-xs">
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="document.getElementById('modalClienteRapido').classList.add('hidden')" class="btn-apple btn-apple-secondary flex-1 py-2 text-xs">Cancelar</button>
+                    <button type="submit" class="btn-apple btn-apple-primary flex-1 py-2 text-xs">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL ESCANER QR -->
+    <div id="modalEscanerQR" class="hidden modal-apple-backdrop">
+        <div class="modal-apple-card p-5 w-full max-w-sm text-center">
+            <div id="reader" class="w-full rounded-xl overflow-hidden bg-black mb-3"></div>
+            <button onclick="detenerEscannerQR()" class="btn-apple btn-apple-danger w-full py-2.5 text-xs">Cerrar Cámara</button>
+        </div>
+    </div>
+
+    <!-- MODAL EDITOR UNIVERSAL -->
+    <div id="modalEditorUniversal" class="hidden modal-apple-backdrop">
+        <div class="modal-apple-card w-full max-w-md flex flex-col max-h-[92vh]">
+            <div class="p-4 border-b border-slate-800 bg-slate-900/70 flex justify-between items-center">
+                <h3 class="font-bold text-base text-white">✏️ Editor de Registro</h3>
+                <button onclick="cerrarEditor()" class="text-slate-400 hover:text-white font-bold text-xl px-2">✕</button>
+            </div>
+            <form onsubmit="guardarEdicion(event)" class="flex flex-col flex-1 overflow-hidden">
+                <div id="formEditorUniversal" class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-3"></div>
+                <div class="p-4 border-t border-slate-800 bg-slate-900/90 flex gap-2">
+                    <button type="button" onclick="cerrarEditor()" class="btn-apple btn-apple-secondary flex-1 py-2.5 text-xs">Cancelar</button>
+                    <button type="submit" class="btn-apple btn-apple-primary flex-1 py-2.5 text-xs">Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SIDEBAR ESTILO APPLE DARK / DIBOLD -->
+    <aside id="sidebar" class="w-72 bg-[#090e1a]/95 backdrop-blur-2xl border-r border-white/[0.08] text-white flex-col shadow-2xl z-40 absolute md:relative h-full transform -translate-x-full md:translate-x-0 transition-transform duration-300 flex">
+        <div class="p-5 border-b border-white/[0.08] text-center">
+            <h1 class="text-xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-teal-400 via-cyan-400 to-indigo-400">PRISMA PRO</h1>
+            <div class="mt-2.5 inline-flex items-center gap-2 bg-slate-900/80 px-3 py-1 rounded-full border border-white/10 shadow-sm">
+                <div class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]"></div>
+                <p id="lblUsuarioDesktop" class="text-[11px] text-slate-300 font-medium capitalize"></p>
+            </div>
+            <div class="mt-2 flex items-center justify-center gap-2">
+                <button onclick="document.getElementById('modalCambiarPin').classList.remove('hidden')" class="text-[10px] text-slate-400 hover:text-teal-300 transition-colors">Cambiar PIN</button>
+            </div>
+            <button onclick="verAlertasStockMinimo()" class="hidden mt-2 mx-auto flex items-center gap-1.5 badge-apple badge-amber text-[10px]" id="btnStockMinimo">
+                <span>📦 Stock bajo mínimo:</span>
+                <span id="badgeStockMinimo" class="bg-amber-400 text-slate-950 rounded-full px-1.5 font-bold">0</span>
+            </button>
+            <p id="lblAvisoLicencia" class="mt-1 text-[10px] font-bold text-amber-300"></p>
+        </div>
+        <nav id="menuNavegacion" class="flex-1 mt-2 overflow-y-auto pb-20 md:pb-0 text-sm p-3 space-y-1 custom-scrollbar"></nav>
+        <div class="p-4 border-t border-white/[0.08] bg-[#070b14]">
+            <button onclick="cerrarSesion()" class="btn-apple btn-apple-secondary w-full py-2.5 text-xs text-rose-400 hover:text-rose-300 hover:border-rose-500/30">
+                🔒 Cerrar Sesión
+            </button>
+        </div>
+    </aside>
+
+    <!-- Barra Superior Mobile -->
+    <div class="md:hidden bg-[#090e1a]/95 border-b border-white/10 text-white p-4 flex justify-between items-center z-30 w-full absolute backdrop-blur-xl">
+        <h1 class="font-extrabold text-teal-400 text-lg">PRISMA PRO</h1>
+        <button onclick="toggleMenu()" class="text-2xl text-slate-300 focus:outline-none">☰</button>
+    </div>
+
+    <!-- Contenedor Toasts Flotantes -->
+    <div id="contenedorAlertas" class="fixed top-4 right-4 md:right-6 z-[140] flex flex-col gap-2.5 pointer-events-none"></div>
+
+    <!-- CONTENEDOR PRINCIPAL -->
+    <main class="flex-1 p-4 pt-20 md:pt-14 md:p-8 overflow-y-auto relative w-full custom-scrollbar">
+
+        <!-- ================= PUNTO DE VENTA ================= -->
+        <section id="ventas" class="seccion">
+            <div class="flex justify-between items-center mb-6 flex-wrap gap-3">
+                <div>
+                    <h2 class="text-2xl font-bold tracking-tight text-white">🛒 Punto de Venta</h2>
+                    <p class="text-xs text-slate-400">Emisión de facturas y ventas en tiempo real con blindaje de stock</p>
+                </div>
+                <span id="estadoCajaBadge" class="badge-apple badge-teal">--</span>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 space-y-4">
+                    <div class="card-apple p-5">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                            <div>
+                                <label class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1 block">Local de Venta</label>
+                                <select id="ventaSucursal" onchange="actualizarVendedoresSucursal(); vaciarCarrito(); verificarEstadoCajaPOS(); renderizarHistorialFacturas();" class="input-apple text-xs font-semibold"></select>
+                            </div>
+                            <div>
+                                <label class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1 block">Vendedor Responsable</label>
+                                <select id="ventaVendedor" class="input-apple text-xs font-semibold"></select>
+                            </div>
+                        </div>
+                        <div class="flex gap-2 mb-4">
+                            <input id="inputEscaneoQR" onchange="procesarEscaneoQR(this.value)" placeholder="Pistola lectora / código de barras / QR..." class="input-apple flex-1 text-xs font-mono">
+                            <button type="button" onclick="iniciarEscannerCamaraReal()" class="btn-apple btn-apple-secondary px-4 text-sm" title="Escanear con cámara">📷</button>
+                        </div>
+                        <form id="formAgregarItem" onsubmit="agregarItemAlCarrito(event)" class="space-y-3">
+                            <div class="relative">
+                                <label class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1 block">Buscar Producto</label>
+                                <input id="ventaBuscadorProd" autocomplete="off" oninput="filtrarProductosPOS()" onfocus="filtrarProductosPOS()" placeholder="Escriba el nombre, código o detalle del producto..." class="input-apple text-xs">
+                                <input type="hidden" id="ventaProductoId">
+                                <div id="ventaSugerenciasProd" class="hidden absolute z-30 w-full bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl mt-1.5 max-h-60 overflow-y-auto custom-scrollbar backdrop-blur-xl"></div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1 block">Cantidad</label>
+                                    <input type="number" id="ventaCantidad" min="1" value="1" oninput="actualizarPrecioVenta()" class="input-apple text-xs font-bold tabular-nums">
+                                </div>
+                                <div>
+                                    <label class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1 block">Subtotal Calculado</label>
+                                    <input id="ventaTotalCalculado" readonly class="input-apple text-xs font-black text-emerald-400 bg-slate-950/60 tabular-nums">
+                                </div>
+                            </div>
+                            <button type="submit" id="btnAgregarItem" class="btn-apple btn-apple-emerald w-full py-3 text-xs font-bold">➕ Agregar al carrito</button>
+                        </form>
+                    </div>
+                    <div class="card-apple overflow-hidden">
+                        <table class="table-apple">
+                            <thead>
+                                <tr>
+                                    <th class="p-3 text-center w-16">Cant</th>
+                                    <th class="p-3 text-left">Producto</th>
+                                    <th class="p-3 text-right">Unitario</th>
+                                    <th class="p-3 text-right">Subtotal</th>
+                                    <th class="p-3 w-10"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="grillaCarritoBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <div class="card-apple p-5 space-y-4">
+                        <div>
+                            <label class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1 block">Condición de Pago</label>
+                            <select id="ventaPago" class="input-apple text-xs font-semibold">
+                                <option>Contado</option>
+                                <option>Crédito</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1 block">Cliente</label>
+                            <div class="flex gap-2">
+                                <select id="ventaCliente" class="input-apple flex-1 text-xs font-semibold"></select>
+                                <button type="button" onclick="document.getElementById('modalClienteRapido').classList.remove('hidden')" class="btn-apple btn-apple-secondary px-3 py-2 text-xs font-bold" title="Nuevo cliente rápido">+</button>
+                            </div>
+                        </div>
+                        <div class="border-t border-slate-800/80 pt-4">
+                            <p class="text-[11px] uppercase tracking-wider font-semibold text-slate-400">Total a Cobrar</p>
+                            <p id="lblTotalNumeroCarrito" class="text-3xl font-black text-emerald-400 tabular-nums tracking-tight mt-1">Gs. 0</p>
+                            <p id="lblTotalLetrasCarrito" class="text-[10px] uppercase font-mono text-slate-400 mt-1"></p>
+                        </div>
+                        <button id="btnPrepararFactura" onclick="prepararVenta()" disabled class="btn-apple btn-apple-primary w-full py-3.5 text-sm font-bold shadow-lg shadow-cyan-500/20">🧾 Generar Factura</button>
+                    </div>
+                    <div class="card-apple p-4">
+                        <h4 class="font-bold text-xs uppercase tracking-wider text-slate-400 mb-3">🔁 Reimpresión de Facturas</h4>
+                        <div id="grillaReimpresionBody" class="space-y-2 max-h-64 overflow-y-auto custom-scrollbar"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= LOGÍSTICA / MOVIMIENTOS ================= -->
+        <section id="traslados" class="seccion">
+            <h2 class="text-2xl font-bold tracking-tight text-white mb-6">🚚 Logística y Movimientos de Stock</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                <div class="card-apple p-5 lg:col-span-1">
+                    <h3 class="font-bold text-sm text-white mb-3">📝 Armar Remito de Traslado</h3>
+                    <div class="grid grid-cols-2 gap-3 mb-3">
+                        <div>
+                            <label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Origen</label>
+                            <select id="trasOrigen" onchange="actualizarProductosTraslado(); vaciarRemito();" class="input-apple text-xs"></select>
+                        </div>
+                        <div>
+                            <label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Destino</label>
+                            <select id="trasDestino" class="input-apple text-xs"></select>
+                        </div>
+                    </div>
+                    <form onsubmit="agregarItemRemito(event)" class="space-y-3 border-t border-slate-800/80 pt-3">
+                        <div>
+                            <label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Producto con Stock</label>
+                            <select id="trasProducto" class="input-apple text-xs"></select>
+                        </div>
+                        <div>
+                            <label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Cantidad a Enviar</label>
+                            <input type="number" id="trasCantidad" min="1" value="1" class="input-apple text-xs font-bold tabular-nums">
+                        </div>
+                        <button type="submit" class="btn-apple btn-apple-secondary w-full py-2 text-xs font-bold">➕ Agregar al remito</button>
+                    </form>
+                    <div class="mt-4 border-t border-slate-800/80 pt-3">
+                        <table class="w-full text-xs">
+                            <thead class="text-slate-400 uppercase text-[10px]"><tr><th class="text-left py-1">Cant</th><th class="text-left py-1">Producto</th><th></th></tr></thead>
+                            <tbody id="grillaRemitoBody"></tbody>
+                        </table>
+                        <p id="lblRemitoResumen" class="text-xs font-semibold text-slate-300 mt-2"></p>
+                        <div class="flex gap-2 mt-3">
+                            <button onclick="vaciarRemito()" class="btn-apple btn-apple-secondary flex-1 py-2 text-xs">Vaciar</button>
+                            <button id="btnEnviarRemito" onclick="crearTraslado()" disabled class="btn-apple btn-apple-primary flex-1 py-2 text-xs font-bold">🚚 Enviar remito</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-apple p-5 lg:col-span-2">
+                    <div class="flex justify-between items-center mb-3 flex-wrap gap-2">
+                        <h3 class="font-bold text-sm text-white">📦 Matriz de Stock por Sucursal</h3>
+                        <div class="flex gap-2">
+                            <input id="buscadorMatrizStock" oninput="renderMatrizStock()" placeholder="Buscar producto..." class="input-apple text-xs py-1.5 max-w-[200px]">
+                            <button onclick="imprimirMatrizStock()" class="btn-apple btn-apple-secondary text-xs py-1.5 px-3">🖨️ A4</button>
+                        </div>
+                    </div>
+                    <div class="overflow-auto max-h-72 custom-scrollbar">
+                        <table class="table-apple text-xs">
+                            <thead id="matrizStockHead" class="sticky top-0"></thead>
+                            <tbody id="matrizStockBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-apple p-5 mb-6">
+                <div class="flex justify-between items-center mb-3 flex-wrap gap-2">
+                    <h3 class="font-bold text-sm text-white">📑 Remitos Emitidos</h3>
+                    <select id="filtroRemitoEstado" onchange="renderRemitos()" class="input-apple text-xs py-1.5 max-w-[180px]">
+                        <option value="TODOS">Todos los estados</option>
+                        <option value="En Tránsito">En Tránsito</option>
+                        <option value="Recibido">Recibido</option>
+                    </select>
+                </div>
+                <div id="listaTraslados" class="space-y-2 max-h-72 overflow-y-auto custom-scrollbar"></div>
+            </div>
+
+            <div class="card-apple p-5">
+                <div class="flex justify-between items-center mb-3 flex-wrap gap-2">
+                    <h3 class="font-bold text-sm text-white">🧾 Libro de Movimientos de Stock</h3>
+                    <div class="flex gap-2 flex-wrap">
+                        <select id="filtroMovSucursal" onchange="renderMovimientos()" class="input-apple text-xs py-1.5"></select>
+                        <select id="filtroMovTipo" onchange="renderMovimientos()" class="input-apple text-xs py-1.5">
+                            <option value="TODOS">Todo movimiento</option>
+                            <option value="COMPRA">Compras</option>
+                            <option value="VENTA">Ventas</option>
+                            <option value="TRASLADO-SALIDA">Salidas traslado</option>
+                            <option value="TRASLADO-ENTRADA">Entradas traslado</option>
+                        </select>
+                        <input id="buscadorMovimientos" oninput="renderMovimientos()" placeholder="Buscar producto..." class="input-apple text-xs py-1.5 max-w-[180px]">
+                        <button onclick="imprimirMovimientos()" class="btn-apple btn-apple-secondary text-xs py-1.5 px-3">🖨️ A4</button>
+                    </div>
+                </div>
+                <div class="overflow-auto max-h-80 custom-scrollbar">
+                    <table class="table-apple text-xs">
+                        <thead class="sticky top-0">
+                            <tr>
+                                <th class="p-2.5 text-left">Fecha</th>
+                                <th class="p-2.5 text-left">Tipo</th>
+                                <th class="p-2.5 text-left">Sucursal</th>
+                                <th class="p-2.5 text-left">Producto</th>
+                                <th class="p-2.5 text-center">Cant.</th>
+                                <th class="p-2.5 text-left">Documento</th>
+                                <th class="p-2.5 text-left">Responsable</th>
+                            </tr>
+                        </thead>
+                        <tbody id="grillaMovimientosBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= SUCURSALES ================= -->
+        <section id="sucursales" class="seccion">
+            <h2 class="text-2xl font-bold tracking-tight text-white mb-6">🏪 Gestión de Sucursales</h2>
+            <div class="card-apple p-5 mb-6">
+                <form onsubmit="agregarSucursal(event)" class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Nombre Único</label><input id="sucNombre" required class="input-apple text-xs"></div>
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Dirección</label><input id="sucDireccion" class="input-apple text-xs"></div>
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Teléfono</label><input id="sucTel" class="input-apple text-xs"></div>
+                    <button type="submit" class="btn-apple btn-apple-primary py-2.5 text-xs font-bold">🏪 Crear sucursal</button>
+                </form>
+            </div>
+            <p class="text-xs text-slate-400 mb-3">Toque una sucursal para ver el detalle de mercaderías e imprimir en A4.</p>
+            <div id="listaSucursalesGrid" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+        </section>
+
+        <!-- ================= PROVEEDORES ================= -->
+        <section id="proveedores" class="seccion">
+            <h2 class="text-2xl font-bold tracking-tight text-white mb-6">🏭 Proveedores</h2>
+            <div class="card-apple p-5 mb-6">
+                <form onsubmit="agregarProveedor(event)" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Razón Social</label><input id="provNombre" required class="input-apple text-xs"></div>
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">RUC</label><input id="provDoc" required class="input-apple text-xs"></div>
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Teléfono</label><input id="provTel" class="input-apple text-xs"></div>
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Dirección</label><input id="provDir" class="input-apple text-xs"></div>
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Contacto</label><input id="provContacto" class="input-apple text-xs"></div>
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Email</label><input id="provEmail" class="input-apple text-xs"></div>
+                    <div class="md:col-span-2"><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Observaciones</label><input id="provObs" class="input-apple text-xs"></div>
+                    <button type="submit" class="btn-apple btn-apple-primary text-xs font-bold self-end py-2.5">🏭 Registrar proveedor</button>
+                </form>
+            </div>
+            <div id="listaProveedores" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+        </section>
+
+        <!-- ================= CATÁLOGO ================= -->
+        <section id="deposito" class="seccion">
+            <h2 class="text-2xl font-bold tracking-tight text-white mb-6">📦 Catálogo de Productos y Códigos QR</h2>
+            <div class="card-apple p-5 mb-6">
+                <form onsubmit="agregarProducto(event)" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Nombre Único</label><input id="prodNombre" required class="input-apple text-xs"></div>
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Costo de Compra (Gs.)</label><input type="number" id="prodCosto" required min="0" class="input-apple text-xs font-bold tabular-nums"></div>
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Precio de Venta (Gs.)</label><input type="number" id="prodPrecio" required min="0" class="input-apple text-xs font-bold tabular-nums"></div>
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Categoría</label><input id="prodCategoria" class="input-apple text-xs"></div>
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Unidad de Medida</label><select id="prodUnidad" class="input-apple text-xs"><option>UNIDAD</option><option>CAJA</option><option>METRO</option><option>KG</option><option>LITRO</option><option>PAR</option></select></div>
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Stock Mínimo</label><input type="number" id="prodStockMin" value="0" min="0" class="input-apple text-xs font-bold tabular-nums"></div>
+                    <div class="md:col-span-2"><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Detalle / Medida / Marca</label><input id="prodDetalle" placeholder="Detalle técnico, medidas..." class="input-apple text-xs"></div>
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Observaciones</label><input id="prodObservaciones" class="input-apple text-xs"></div>
+                    <button type="submit" class="btn-apple btn-apple-primary md:col-span-3 py-3 text-xs font-bold">📦 Crear producto en catálogo</button>
+                </form>
+            </div>
+            <div class="flex gap-2 mb-4">
+                <input id="buscadorCatalogo" oninput="render()" placeholder="Buscar en catálogo..." class="input-apple text-xs flex-1">
+            </div>
+            <div class="card-apple overflow-hidden">
+                <table class="table-apple">
+                    <thead>
+                        <tr>
+                            <th class="p-3.5 text-left">Producto</th>
+                            <th class="p-3.5 text-left">Categoría</th>
+                            <th class="p-3.5 text-left">Costo</th>
+                            <th class="p-3.5 text-left">Precio Venta</th>
+                            <th class="p-3.5 text-center">Stock Total</th>
+                            <th class="p-3.5 text-left">Código QR</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaProductos"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ================= COMPRAS ================= -->
+        <section id="compras" class="seccion">
+            <h2 class="text-2xl font-bold tracking-tight text-white mb-6">📥 Compras de Stock</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                <div class="card-apple p-5">
+                    <h3 class="font-bold text-sm text-white mb-3">🧾 Registrar Nueva Compra</h3>
+                    <div class="space-y-3 mb-3">
+                        <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Proveedor</label><select id="compraProveedor" onchange="vaciarCompra()" class="input-apple text-xs"></select></div>
+                        <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Depósito Destino</label><select id="compraDestino" class="input-apple text-xs"></select></div>
+                        <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Nº Factura Proveedor</label><input id="compraFactura" placeholder="001-001-0000000" class="input-apple text-xs"></div>
+                    </div>
+                    <form onsubmit="agregarItemCompra(event)" class="space-y-3 border-t border-slate-800/80 pt-3">
+                        <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Producto</label><select id="compraProducto" onchange="sugerirCostoCompra()" class="input-apple text-xs"></select></div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Cantidad</label><input type="number" id="compraCantidad" min="1" value="1" class="input-apple text-xs font-bold tabular-nums"></div>
+                            <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Costo Unit. (Gs.)</label><input type="number" id="compraCostoUnit" min="0" class="input-apple text-xs font-bold tabular-nums"></div>
+                        </div>
+                        <button type="submit" class="btn-apple btn-apple-secondary w-full py-2 text-xs font-bold">➕ Agregar a la compra</button>
+                    </form>
+                    <div class="mt-4 border-t border-slate-800/80 pt-3">
+                        <table class="w-full text-xs">
+                            <thead class="text-slate-400 uppercase text-[10px]"><tr><th class="text-left py-1">Cant</th><th class="text-left py-1">Producto</th><th class="text-right py-1">Subtotal</th><th></th></tr></thead>
+                            <tbody id="grillaCompraBody"></tbody>
+                        </table>
+                        <p id="lblCompraTotal" class="text-right font-black text-emerald-400 text-base mt-2 tabular-nums">Gs. 0</p>
+                        <div class="flex gap-2 mt-2">
+                            <button onclick="vaciarCompra()" class="btn-apple btn-apple-secondary flex-1 py-2 text-xs">Vaciar</button>
+                            <button id="btnRegistrarCompra" onclick="registrarCompra()" disabled class="btn-apple btn-apple-primary flex-1 py-2 text-xs font-bold">📥 Guardar</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="lg:col-span-2 card-apple p-5">
+                    <div class="flex justify-between items-center mb-3 flex-wrap gap-2">
+                        <h3 class="font-bold text-sm text-white">📚 Historial de Compras</h3>
+                        <select id="filtroCompraProveedor" onchange="render()" class="input-apple text-xs py-1.5 max-w-[200px]"></select>
+                    </div>
+                    <div id="listaCompras" class="space-y-2 max-h-[26rem] overflow-y-auto custom-scrollbar"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= GASTOS ================= -->
+        <section id="gastos" class="seccion">
+            <h2 class="text-2xl font-bold tracking-tight text-white mb-6">💸 Gastos Operativos</h2>
+            <div class="card-apple p-5 mb-6">
+                <form onsubmit="registrarGasto(event)" class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Categoría</label><select id="gastoCategoria" class="input-apple text-xs"><option>ALQUILER</option><option>SERVICIOS</option><option>SUELDOS</option><option>FLETE</option><option>MANTENIMIENTO SISTEMA</option><option>OTROS</option></select></div>
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Sucursal</label><select id="gastoSucursal" class="input-apple text-xs"></select></div>
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Detalle</label><input id="gastoDetalle" required class="input-apple text-xs"></div>
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Monto (Gs.)</label><input type="number" id="gastoMonto" required min="1" class="input-apple text-xs font-bold tabular-nums"></div>
+                    <button type="submit" class="btn-apple btn-apple-danger md:col-span-4 py-2.5 text-xs font-bold">💸 Registrar gasto</button>
+                </form>
+            </div>
+            <div id="listaGastos" class="space-y-2"></div>
+        </section>
+
+        <!-- ================= CLIENTES ================= -->
+        <section id="clientes" class="seccion">
+            <h2 class="text-2xl font-bold tracking-tight text-white mb-6">🤝 Clientes</h2>
+            <div class="card-apple p-5 mb-6">
+                <form onsubmit="agregarCliente(event)" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Nombre</label><input id="cliNombre" required class="input-apple text-xs"></div>
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Apellido</label><input id="cliApellido" required class="input-apple text-xs"></div>
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Tipo Doc.</label><select id="cliTipoDoc" class="input-apple text-xs"><option>Cedula</option><option>RUC</option><option>Pasaporte</option></select></div>
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Documento</label><input id="cliDoc" required class="input-apple text-xs"></div>
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Teléfono</label><input id="cliTel" class="input-apple text-xs"></div>
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Sexo</label><select id="cliSexo" class="input-apple text-xs"><option value="">Sin especificar</option><option>Femenino</option><option>Masculino</option><option>Otro</option></select></div>
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Dirección</label><input id="cliDireccion" class="input-apple text-xs"></div>
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Ciudad</label><input id="cliCiudad" class="input-apple text-xs"></div>
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Condición</label><select id="cliCondicion" class="input-apple text-xs"><option>Contado</option><option>Crédito</option></select></div>
+                    <div class="md:col-span-3"><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Observaciones</label><input id="cliObservaciones" class="input-apple text-xs"></div>
+                    <button type="submit" class="btn-apple btn-apple-primary md:col-span-3 py-2.5 text-xs font-bold">🤝 Registrar cliente</button>
+                </form>
+            </div>
+            <div class="card-apple p-4 mb-4">
+                <div class="flex gap-2 mb-3 flex-wrap">
+                    <input id="buscadorClientes" oninput="renderClientes()" placeholder="Buscar por apellido, nombre o documento..." class="input-apple text-xs flex-1">
+                    <button onclick="imprimirListadoClientes()" class="btn-apple btn-apple-secondary text-xs px-4">🖨️ Listado A4</button>
+                </div>
+                <div id="barraAbecedario" class="flex flex-wrap gap-1"></div>
+            </div>
+            <div id="listaClientes" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+        </section>
+
+        <!-- ================= PERSONAL ================= -->
+        <section id="personal" class="seccion">
+            <h2 class="text-2xl font-bold tracking-tight text-white mb-6">👥 Personal y Permisos</h2>
+            <div class="card-apple p-5 mb-4">
+                <form onsubmit="agregarEmpleado(event)" class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Nombre</label><input id="empNombre" required class="input-apple text-xs"></div>
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Apellido</label><input id="empApellido" required class="input-apple text-xs"></div>
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Cédula</label><input id="empDoc" required class="input-apple text-xs"></div>
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Domicilio</label><input id="empDomicilio" class="input-apple text-xs"></div>
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Sucursal</label><select id="empSucursal" class="input-apple text-xs"></select></div>
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Rol</label><select id="empRol" onchange="mostrarAyudaRol()" class="input-apple text-xs"></select></div>
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">PIN (4 dígitos)</label><input id="empPin" required pattern="[0-9]{4}" maxlength="4" class="input-apple text-xs font-mono"></div>
+                    <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Comisión %</label><input type="number" id="empComision" value="0" min="0" max="100" class="input-apple text-xs font-bold tabular-nums"></div>
+                    <p id="ayudaRol" class="md:col-span-4 text-xs bg-slate-900 border border-slate-800 rounded-xl p-3 text-cyan-300"></p>
+                    <button type="submit" class="btn-apple btn-apple-primary md:col-span-4 py-2.5 text-xs font-bold">👥 Registrar empleado</button>
+                </form>
+            </div>
+            <div class="card-apple p-4 mb-4 text-xs text-slate-400">
+                <b class="text-white text-sm">Matriz de Permisos Vigente:</b>
+                <div id="matrizPermisos" class="mt-2 overflow-x-auto"></div>
+                <div id="gestionRolesWrap" class="text-xs"></div>
+            </div>
+            <div id="listaEmpleados" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+        </section>
+
+        <!-- ================= CAJA ================= -->
+        <section id="caja" class="seccion">
+            <h2 class="text-2xl font-bold tracking-tight text-white mb-6">💵 Caja Diaria</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="card-apple p-5">
+                    <h3 class="font-bold text-sm text-white mb-3">🔓 Apertura de Caja</h3>
+                    <form onsubmit="abrirCaja(event)" class="space-y-3">
+                        <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Sucursal</label><select id="cajaSucursalApertura" class="input-apple text-xs"></select></div>
+                        <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Monto Inicial en Efectivo (Gs.)</label><input type="number" id="cajaMontoApertura" required min="0" class="input-apple text-xs font-bold tabular-nums"></div>
+                        <button type="submit" class="btn-apple btn-apple-emerald w-full py-2.5 text-xs font-bold">Abrir caja</button>
+                    </form>
+                </div>
+                <div class="card-apple p-5">
+                    <h3 class="font-bold text-sm text-white mb-3">🏦 Cierre y Depósito</h3>
+                    <form onsubmit="prepararDepositoCierre(event)" class="space-y-3">
+                        <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Sucursal</label><select id="cajaSucursalCierre" onchange="verificarEfectivoCaja()" class="input-apple text-xs"></select></div>
+                        <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl text-xs flex justify-between items-center">
+                            <span class="text-slate-400">Efectivo teórico calculado:</span>
+                            <span id="lblEfectivoVentas" class="font-black text-emerald-400 tabular-nums"></span>
+                        </div>
+                        <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Monto Depositado Declarado (Gs.)</label><input type="number" id="cajaMontoDeposito" required min="0" class="input-apple text-xs font-bold tabular-nums"></div>
+                        <button type="submit" class="btn-apple btn-apple-secondary w-full py-2.5 text-xs font-bold">Cerrar caja</button>
+                    </form>
+                </div>
+            </div>
+            <div class="card-apple p-5 mt-6">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-bold text-sm text-white">📜 Historial de Cierres</h3>
+                    <select id="cajaHistorialFiltroSucursal" onchange="renderHistorialCaja()" class="input-apple text-xs py-1.5 max-w-[200px]"></select>
+                </div>
+                <div id="listaHistorialCaja" class="space-y-2"></div>
+            </div>
+        </section>
+
+        <!-- ================= BALANCE Y AUDITORÍA ================= -->
+        <section id="informes" class="seccion">
+            <h2 class="text-2xl font-bold tracking-tight text-white mb-6">📊 Balance &amp; Auditoría</h2>
+            <div class="card-apple p-4 mb-6 flex flex-wrap gap-3 items-end">
+                <div class="flex-1 min-w-[220px]">
+                    <label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Sucursal a Auditar</label>
+                    <select id="balanceSucursal" onchange="generarInformesGerenciales()" class="input-apple text-xs font-semibold"></select>
+                </div>
+                <button onclick="imprimirBalance()" class="btn-apple btn-apple-secondary text-xs py-2 px-4">🖨️ Imprimir balance A4</button>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="card-apple p-5">
+                    <h3 class="font-bold text-sm text-white mb-3">Conciliación Contable</h3>
+                    <ul id="listaConciliacion" class="text-xs space-y-1"></ul>
+                    <div class="mt-4"><canvas id="graficoVentas" height="150"></canvas></div>
+                </div>
+                <div class="card-apple p-5">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-bold text-sm text-white">🕵️ Auditoría de Ventas</h3>
+                        <input id="buscadorAuditoria" oninput="renderAuditoria()" placeholder="Buscar venta..." class="input-apple text-xs py-1.5 max-w-[180px]">
+                    </div>
+                    <div id="auditoriaVentasLista" class="max-h-80 overflow-y-auto custom-scrollbar"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= INFORMES GERENCIALES ================= -->
+        <section id="informesAvanzados" class="seccion">
+            <div class="flex justify-between items-center mb-6 flex-wrap gap-3">
+                <div>
+                    <h2 class="text-2xl font-bold tracking-tight text-white">📑 Informes Gerenciales</h2>
+                    <p class="text-xs text-slate-400">Rotación de stock, productos destacados y exportación</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="exportarExcel()" class="btn-apple btn-apple-emerald text-xs py-2 px-3.5">⬇️ CSV Ventas</button>
+                    <button onclick="pedirSucursalParaImprimir()" class="btn-apple btn-apple-primary text-xs py-2 px-3.5">🖨️ Imprimir inventario</button>
+                </div>
+            </div>
+            <div class="card-apple p-4 mb-6">
+                <label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Filtrar Informes por Sucursal</label>
+                <select id="filtroInfoSucursal" onchange="generarInformesAvanzados()" class="input-apple text-xs font-semibold"></select>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+                <div class="card-apple p-4"><h4 class="font-bold text-xs uppercase tracking-wider text-slate-400 mb-2">🏪 Ventas por Sucursal</h4><div id="infoVentasSucursal" class="text-xs"></div></div>
+                <div class="card-apple p-4"><h4 class="font-bold text-xs uppercase tracking-wider text-slate-400 mb-2">🏆 Top Vendedores</h4><div id="infoTopVendedores" class="text-xs"></div></div>
+                <div class="card-apple p-4"><h4 class="font-bold text-xs uppercase tracking-wider text-slate-400 mb-2">👑 Top Clientes</h4><div id="infoTopClientes" class="text-xs"></div></div>
+                <div class="card-apple p-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="font-bold text-xs uppercase tracking-wider text-slate-400">🔥 Top Productos</h4>
+                        <div class="flex gap-1">
+                            <select id="ordenTopProductos" onchange="generarInformesAvanzados()" class="input-apple text-[10px] p-1"><option value="desc">Más vendidos</option><option value="asc">Menos vendidos</option></select>
+                            <select id="limiteTopProductos" onchange="generarInformesAvanzados()" class="input-apple text-[10px] p-1"><option>5</option><option>10</option></select>
+                        </div>
+                    </div>
+                    <div id="infoTopProductos" class="text-xs"></div>
+                </div>
+            </div>
+            <div class="card-apple p-4 mb-6">
+                <div class="flex justify-between items-center mb-2">
+                    <h4 class="font-bold text-xs uppercase tracking-wider text-slate-400">🚫 Stock sin Rotación (Dead Stock)</h4>
+                    <div class="flex gap-1">
+                        <select id="ordenDeadStock" onchange="generarInformesAvanzados()" class="input-apple text-[10px] p-1"><option value="stock_desc">Mayor stock</option><option value="stock_asc">Menor stock</option></select>
+                        <select id="limiteDeadStock" onchange="generarInformesAvanzados()" class="input-apple text-[10px] p-1"><option>5</option><option>10</option></select>
+                    </div>
+                </div>
+                <div id="infoDeadStock" class="text-xs"></div>
+            </div>
+            <div class="card-apple overflow-hidden">
+                <div class="p-4 border-b border-slate-800 flex justify-between items-center flex-wrap gap-2">
+                    <h4 class="font-bold text-sm text-white">📋 Control de Inventario Físico</h4>
+                    <input id="buscadorInventario" oninput="renderizarTablaInventario()" placeholder="Buscar producto..." class="input-apple text-xs py-1.5 max-w-[200px]">
+                </div>
+                <div class="overflow-x-auto max-h-80 custom-scrollbar">
+                    <table class="table-apple">
+                        <thead class="sticky top-0">
+                            <tr>
+                                <th class="p-3 text-left cursor-pointer" onclick="ordenarInventario('producto')">Producto <span id="sort_producto">🔼</span></th>
+                                <th class="p-3 text-left cursor-pointer" onclick="ordenarInventario('sucursal')">Sucursal <span id="sort_sucursal"></span></th>
+                                <th class="p-3 text-center cursor-pointer" onclick="ordenarInventario('stock')">Stock Sistema <span id="sort_stock"></span></th>
+                                <th class="p-3 text-center">Conteo Físico</th>
+                                <th class="p-3 text-left">Observación</th>
+                            </tr>
+                        </thead>
+                        <tbody id="infoInventarioBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= SISTEMA ================= -->
+        <section id="sistema" class="seccion">
+            <h2 class="text-2xl font-bold tracking-tight text-white mb-2">🛠️ Sistema y Mantenimiento</h2>
+            <p class="text-xs text-slate-400 mb-6">Control exclusivo del Informático: persistencia, auditoría y base de datos</p>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="card-apple p-5">
+                    <h3 class="font-bold text-sm text-white mb-3">📄 Contrato de Mantenimiento</h3>
+                    <form onsubmit="guardarLicencia(event)" class="space-y-3">
+                        <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Responsable Técnico</label><input id="licTecnico" class="input-apple text-xs"></div>
+                        <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Contacto</label><input id="licContacto" class="input-apple text-xs"></div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Monto Mensual (Gs.)</label><input type="number" id="licMonto" min="0" class="input-apple text-xs font-bold tabular-nums"></div>
+                            <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Vencimiento</label><input type="date" id="licVencimiento" class="input-apple text-xs"></div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Días de Gracia</label><input type="number" id="licGracia" min="0" value="3" class="input-apple text-xs font-bold tabular-nums"></div>
+                            <div><label class="text-[11px] font-semibold uppercase text-slate-400 mb-1 block">Bloqueo Automático</label><select id="licActiva" class="input-apple text-xs"><option value="si">Activado</option><option value="no">Desactivado</option></select></div>
+                        </div>
+                        <button type="submit" class="btn-apple btn-apple-secondary w-full py-2.5 text-xs font-bold">Guardar contrato</button>
+                    </form>
+                    <div class="mt-4 border-t border-slate-800 pt-4">
+                        <div id="estadoLicenciaBox" class="mb-3"></div>
+                        <button onclick="registrarPagoMantenimiento()" class="btn-apple btn-apple-emerald w-full py-2.5 text-xs font-bold">💰 Registrar pago y liberar 30 días</button>
+                        <div id="historialPagosLic" class="mt-3 space-y-1 max-h-36 overflow-y-auto custom-scrollbar"></div>
+                    </div>
+                </div>
+                <div class="card-apple p-5">
+                    <h3 class="font-bold text-sm text-white mb-3">🗄️ Base de Datos e IndexedDB</h3>
+                    <div class="space-y-2">
+                        <button onclick="descargarBackup()" class="btn-apple btn-apple-primary w-full py-2 text-xs">⬇️ Descargar backup JSON</button>
+                        <label class="btn-apple btn-apple-secondary w-full py-2 text-xs block text-center cursor-pointer">⬆️ Restaurar backup JSON<input type="file" accept="application/json" onchange="restaurarBackup(event)" class="hidden"></label>
+                        <button onclick="forzarSincronizacion()" class="btn-apple btn-apple-secondary w-full py-2 text-xs">🔄 Sincronizar writeBatch con la nube</button>
+                        <button onclick="repararBaseDatos()" class="btn-apple btn-apple-secondary w-full py-2 text-xs">🧰 Verificar y reparar integridad</button>
+                        <button onclick="reiniciarBaseDatos()" class="btn-apple btn-apple-danger w-full py-2 text-xs">☢️ Reiniciar base local (peligroso)</button>
+                    </div>
+                    <div id="diagnosticoDB" class="mt-4 bg-slate-950 text-emerald-400 font-mono text-[11px] p-3 rounded-xl border border-slate-800 max-h-56 overflow-y-auto custom-scrollbar"></div>
+                    <div class="mt-4 border-t border-slate-800 pt-3">
+                        <h4 class="font-bold text-xs uppercase tracking-wider text-slate-400 mb-2">🗓️ Copia de Seguridad Automática</h4>
+                        <div id="backupAutoWrap"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                <div class="card-apple p-5">
+                    <h3 class="font-bold text-sm text-white mb-3">🧾 Facturación Electrónica SIFEN</h3>
+                    <div id="feWrap"></div>
+                </div>
+                <div class="card-apple p-5">
+                    <h3 class="font-bold text-sm text-white mb-3">📜 Registro de Auditoría de Acciones</h3>
+                    <div id="auditoriaWrap"></div>
+                </div>
+            </div>
+            <div class="card-apple p-5 mt-6">
+                <h3 class="font-bold text-sm text-white mb-3">🔒 Verificación de Servidor y Firestore</h3>
+                <div id="seguridadServidorWrap"></div>
+            </div>
+        </section>
+
+        <!-- Área de Impresión Oculta -->
+        <div id="areaFactura" class="hidden"></div>
+    </main>
+
+    <!-- Scripts de la Aplicación -->
+    <script src="core.js"></script>
+    <script src="app.js"></script>
+    <script type="module" src="firebase-sync.js"></script>
+</body>
+</html>
